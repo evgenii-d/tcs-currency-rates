@@ -25,7 +25,7 @@ SHED = sched.scheduler(time.time, time.sleep)
 
 
 def send_currency_rates():
-    result = ''
+    result = 'Debit Cards Transfers\n'
 
     for currency in CURRENCIES:
         with urllib.request.urlopen(currency) as data:

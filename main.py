@@ -17,7 +17,7 @@ except FileNotFoundError:
     logging.info('No config file found')
     quit()
 
-TINKOFF_API = CONFIG['tinkoffAPI']
+CURRENCIES = CONFIG['currencies']
 BOT_TOKEN = CONFIG['botToken']
 CHAT_ID = CONFIG['chatID']
 TIMEOUT = CONFIG['timeout']
@@ -25,17 +25,24 @@ SHED = sched.scheduler(time.time, time.sleep)
 
 
 def send_currency_rates():
-    with urllib.request.urlopen(TINKOFF_API) as data:
-        data = json.loads(data.read())
+    result = ''
 
-        for item in data['payload']['rates']:
-            if item['category'] == 'DebitCardsTransfers':
-                rates = f"RUB—TENGE \nBUY: {item['buy']} | SELL: {item['sell']}"
-                rates = urllib.parse.quote_plus(rates)
+    for currency in CURRENCIES:
+        with urllib.request.urlopen(currency) as data:
+            data = json.loads(data.read())
 
-                bot_api = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={rates}'
-                with urllib.request.urlopen(bot_api) as message:
-                    logging.info(f"BUY: {item['buy']} | SELL: {item['sell']}")
+            for item in data['payload']['rates']:
+                if item['category'] == 'DebitCardsTransfers':
+                    from_currency = item['fromCurrency']['name']
+                    to_currency = item['toCurrency']['name']
+                    result += f"\n{from_currency} | {to_currency}\nBUY: {item['buy']} | SELL: {item['sell']}\n"
+
+    result = urllib.parse.quote(result)
+    bot_api = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={result}'
+
+    with urllib.request.urlopen(bot_api) as message:
+        data = json.loads(message.read())
+        logging.info(f"Message sent: {data['ok']}")
 
 
 def shedHandler():

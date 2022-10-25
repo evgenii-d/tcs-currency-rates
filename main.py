@@ -39,12 +39,12 @@ def send_currency_rates():
 
 
 def shedHandler():
-    logging.info(f'CurrencyRates script started')
     send_currency_rates()
     SHED.enter(TIMEOUT + randrange(300), 1, shedHandler)
 
 
 try:
+    logging.info(f'CurrencyRates script started')
     SHED.enter(1, 1, shedHandler)
     SHED.run()
 except KeyboardInterrupt:

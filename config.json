@@ -2,9 +2,12 @@
     "currencies": [
         "https://api.tinkoff.ru/v1/currency_rates?from=RUB&to=KZT",
         "https://api.tinkoff.ru/v1/currency_rates?from=USD&to=RUB",
-        "https://api.tinkoff.ru/v1/currency_rates?from=EUR&to=RUB"
+        "https://api.tinkoff.ru/v1/currency_rates?from=EUR&to=RUB",
+        "https://api.tinkoff.ru/v1/currency_rates?from=GBP&to=RUB",
+        "https://api.tinkoff.ru/v1/currency_rates?from=RUB&to=JPY"
     ],
     "botToken": "",
     "chatID": "",
-    "timeout": 3300
+    "interval": 1800,
+    "spread": 300
 }

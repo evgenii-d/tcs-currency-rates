@@ -1,10 +1,10 @@
 import os
-import urllib.request
-import urllib.parse
 import json
 import sched
 import time
 import logging
+import urllib.request
+import urllib.parse
 from random import choice, randrange
 
 logging.basicConfig(level=logging.INFO,
@@ -25,7 +25,7 @@ SPREAD = CONFIG['spread']
 SCHED = sched.scheduler(time.time, time.sleep)
 
 
-def get_currency_rates(currencies) -> str:
+def get_currency_rates(currencies: list) -> str:
     result = 'Debit Cards Transfers\n'
 
     for currency in currencies:
@@ -43,25 +43,25 @@ def get_currency_rates(currencies) -> str:
     return result
 
 
-def send_message(bot_token: str, chat_id: str, bot_message: str) -> None:
-    bot_api = f'https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={chat_id}&text={bot_message}'
+def send_message(bot_token: str, chat_id: str, message: str) -> None:
+    bot_api = f'https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={chat_id}&text={message}'
 
     with urllib.request.urlopen(bot_api) as message:
         data = json.loads(message.read())
         logging.info(f"Message sent: {data['ok']}")
 
 
-def shedHandler(prev_bot_message) -> None:
-    bot_message = get_currency_rates(CURRENCIES)
+def shedHandler(old_message: str) -> None:
+    message = get_currency_rates(CURRENCIES)
     delay = INTERVAL + randrange(SPREAD) * choice([-1, 1])
 
-    if bot_message != prev_bot_message:
-        send_message(BOT_TOKEN, CHAT_ID, urllib.parse.quote(bot_message))
-        prev_bot_message = bot_message
+    if message != old_message:
+        send_message(BOT_TOKEN, CHAT_ID, urllib.parse.quote(message))
+        old_message = message
     else:
         logging.info('No changes')
 
-    SCHED.enter(delay, 1, shedHandler, argument=(prev_bot_message,))
+    SCHED.enter(delay, 1, shedHandler, argument=(old_message,))
 
 
 try:

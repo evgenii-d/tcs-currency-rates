@@ -5,24 +5,7 @@ import time
 import logging
 import urllib.request
 import urllib.parse
-from random import choice, randrange
-
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s | %(levelname)s | %(message)s')
-
-try:
-    CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
-    CONFIG = json.load(open(CONFIG_PATH, 'r'))
-except FileNotFoundError:
-    logging.info('No config file found')
-    quit()
-
-CURRENCIES = CONFIG['currencies']
-BOT_TOKEN = CONFIG['botToken']
-CHAT_ID = CONFIG['chatID']
-INTERVAL = CONFIG['interval']
-SPREAD = CONFIG['spread']
-SCHED = sched.scheduler(time.time, time.sleep)
+from random import choice
 
 
 def get_currency_rates(currencies: list) -> str:
@@ -37,9 +20,11 @@ def get_currency_rates(currencies: list) -> str:
                     from_currency = item['fromCurrency']['name']
                     to_currency = item['toCurrency']['name']
                     if from_currency == 'RUB':
-                        result += f"\n1 {from_currency} = {item['buy']} {to_currency}\nBUY: {item['buy']} | SELL: {item['sell']}\n"
+                        result += (f"\n1 {from_currency} = {item['buy']} {to_currency}\n"
+                                   f"BUY: {item['buy']} | SELL: {item['sell']}\n")
                     else:
-                        result += f"\n1 {from_currency} = {item['sell']} {to_currency}\nBUY: {item['sell']} | SELL: {item['buy']}\n"
+                        result += (f"\n1 {from_currency} = {item['sell']} {to_currency}\n"
+                                   f"BUY: {item['sell']} | SELL: {item['buy']}\n")
     return result
 
 
@@ -51,22 +36,41 @@ def send_message(bot_token: str, chat_id: str, message: str) -> None:
         logging.info(f"Message sent: {data['ok']}")
 
 
-def shedHandler(old_message: str) -> None:
-    message = get_currency_rates(CURRENCIES)
-    delay = INTERVAL + randrange(SPREAD) * choice([-1, 1])
+def shedHandler(old_message: str, config: dict) -> None:
+    scheduler = sched.scheduler(time.time, time.sleep)
+    message = get_currency_rates(config['currencies'])
+    delay = config['interval'] + config['spread'] * choice([-1, 1])
 
     if message != old_message:
-        send_message(BOT_TOKEN, CHAT_ID, urllib.parse.quote(message))
+        send_message(config['botToken'], config['chatID'],
+                     urllib.parse.quote(message))
         old_message = message
     else:
         logging.info('No changes')
 
-    SCHED.enter(delay, 1, shedHandler, argument=(old_message,))
+    scheduler.enter(delay, 1, shedHandler, argument=(old_message, config,))
+    scheduler.run()
 
 
-try:
-    logging.info(f'CurrencyRates script started')
-    SCHED.enter(1, 1, shedHandler, argument=('',))
-    SCHED.run()
-except KeyboardInterrupt:
-    pass
+def main():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s | %(levelname)s | %(message)s')
+
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        config = json.load(open(config_path, 'r'))
+    except FileNotFoundError:
+        logging.info('No config file found')
+        quit()
+
+    try:
+        logging.info(f'CurrencyRates script started')
+        scheduler = sched.scheduler(time.time, time.sleep)
+        scheduler.enter(1, 1, shedHandler, argument=('', config,))
+        scheduler.run()
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == '__main__':
+    main()
